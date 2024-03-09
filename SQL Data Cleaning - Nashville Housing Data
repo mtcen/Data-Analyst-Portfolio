@@ -1,0 +1,115 @@
+----convert sale date
+
+--alter table [dbo].[NashvilleHousingData]
+--alter column SaleDate Date
+
+-------------------------------------------
+
+----Populate Property Address Data
+--select NHD1.ParcelID, NHD1.PropertyAddress, NHD2.ParcelID, 
+--NHD2.PropertyAddress, isnull(NHD1.PropertyAddress, NHD2.PropertyAddress)
+--from [dbo].[NashvilleHousingData] NHD1
+--join [dbo].[NashvilleHousingData] NHD2
+--	on NHD1.ParcelID = NHD2.ParcelID
+--	and NHD1.UniqueID <> NHD2.UniqueID
+--where NHD1.PropertyAddress is null
+
+--update NHD1
+--	set PropertyAddress = isnull(NHD1.PropertyAddress, NHD2.PropertyAddress)
+--	from [dbo].[NashvilleHousingData] NHD1
+--join [dbo].[NashvilleHousingData] NHD2
+--	on NHD1.ParcelID = NHD2.ParcelID
+--	and NHD1.UniqueID <> NHD2.UniqueID
+--where NHD1.PropertyAddress is null
+
+-------------------------------------------------
+----Breaking out Address into multiple columns (Street, City, State)
+
+--select
+--	substring(PropertyAddress, 1, charindex(',', PropertyAddress)-1)
+--	as Address,
+--	substring(PropertyAddress, charindex(',', PropertyAddress)+1, len(PropertyAddress))
+--	as City
+--from [dbo].[NashvilleHousingData]
+
+--alter table [dbo].[NashvilleHousingData]
+--add StreetAddress nvarchar(255);
+
+--update [dbo].[NashvilleHousingData]
+--set StreetAddress = substring(PropertyAddress, 1, charindex(',', PropertyAddress)-1)
+
+--alter table [dbo].[NashvilleHousingData]
+--add City nvarchar(255);
+
+--update [dbo].[NashvilleHousingData]
+--set City = substring(PropertyAddress, charindex(',', PropertyAddress)+1, len(PropertyAddress))
+
+-----------------------------
+----Owner Address
+
+--select
+--parsename(replace(OwnerAddress, ',', '.'), 3) as StreetAddress,
+--parsename(replace(OwnerAddress, ',', '.'), 2) as City,
+--parsename(replace(OwnerAddress, ',', '.'), 1) as State
+--from [dbo].[NashvilleHousingData]
+
+--alter table [dbo].[NashvilleHousingData]
+--add OwnerStreetAddress nvarchar(255),
+--OwnerCity nvarchar(255),
+--OwnerState nvarchar(255);
+
+--update [dbo].[NashvilleHousingData]
+--set OwnerStreetAddress = parsename(replace(OwnerAddress, ',', '.'), 3)
+
+--update [dbo].[NashvilleHousingData]
+--set OwnerCity = parsename(replace(OwnerAddress, ',', '.'), 2)
+
+--update [dbo].[NashvilleHousingData]
+--set OwnerState = parsename(replace(OwnerAddress, ',', '.'), 1)
+
+--------------------------------------------------------
+----change Y and N to Yes and No
+
+--select SoldAsVacant,
+--	Case	
+--		when SoldAsVacant = 'Y' then 'Yes'
+--		when SoldAsVacant = 'N' then 'No'
+--		else SoldAsVacant
+--	end
+--from [dbo].[NashvilleHousingData]
+
+--update [dbo].[NashvilleHousingData]
+--set SoldAsVacant = 
+--	Case	
+--		when SoldAsVacant = 'Y' then 'Yes'
+--		when SoldAsVacant = 'N' then 'No'
+--		else SoldAsVacant
+--	end
+	
+------------------------------------------------------
+----delete duplicat entries (assuming entires have been confirmed to be duplicates)
+
+----with RowNumCTE as 
+----(
+----	select *,
+----	Row_Number() over
+----		(
+----			Partition by ParcelID,
+----						PropertyAddress,
+----						SalePrice,
+----						SaleDate,
+----						LegalReference
+----			order by UniqueID) as Row_Num
+----	from [dbo].[NashvilleHousingData]
+----)
+
+----delete 
+----from RowNumCTE
+----where Row_Num > 1
+
+----------------------------------------------------
+----delete unused columns
+
+----alter table [dbo].[NashvilleHousingData]
+----drop column PropertyAddress, OwnerAddress
+
